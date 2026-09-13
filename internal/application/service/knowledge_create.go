@@ -87,12 +87,18 @@ func (s *knowledgeService) CreateKnowledgeFromFile(ctx context.Context,
 	// Check if file already exists
 	tenantID := ctx.Value(types.TenantIDContextKey).(uint64)
 	logger.Infof(ctx, "Checking if file exists, tenant ID: %d", tenantID)
+	dataSourceID, externalID := "", ""
+	if channel == types.ChannelConfluence {
+		dataSourceID, externalID = metadata["datasource_id"], metadata["external_id"]
+	}
 	exists, existingKnowledge, err := s.repo.CheckKnowledgeExists(ctx, tenantID, kbID, &types.KnowledgeCheckParams{
-		Type:     "file",
-		FileName: fileName,
-		FileType: getFileType(fileName),
-		FileSize: file.Size,
-		FileHash: hash,
+		DataSourceID: dataSourceID,
+		ExternalID:   externalID,
+		Type:         "file",
+		FileName:     fileName,
+		FileType:     getFileType(fileName),
+		FileSize:     file.Size,
+		FileHash:     hash,
 	})
 	if err != nil {
 		logger.Errorf(ctx, "Failed to check knowledge existence: %v", err)
@@ -169,6 +175,16 @@ func (s *knowledgeService) CreateKnowledgeFromFile(ctx context.Context,
 		UpdatedAt:        time.Now(),
 		EmbeddingModelID: kb.EmbeddingModelID,
 		Metadata:         metadataJSON,
+	}
+	if channel == types.ChannelConfluence {
+		if title := metadata["source_title"]; title != "" {
+			safeTitle, valid := secutils.ValidateInput(title)
+			if !valid {
+				return nil, werrors.NewValidationError("Confluence 标题包含非法内容")
+			}
+			knowledge.Title = safeTitle
+		}
+		knowledge.Source = metadata["source_url"]
 	}
 
 	if processOverrides != nil {

@@ -1,4 +1,19 @@
 export default {
+  confluence: {
+    attachments: "Import page attachments",
+    images: "Import images with OCR",
+    attachmentHint: "Attachments are separate documents in this knowledge base linked to their source page. Image OCR requires a visual model and multimodal parsing. Unsupported formats and download failures appear in sync logs.",
+    schedule10min: "Every 10 minutes",
+    siteUrl: "Confluence site URL",
+    siteHint: "Enter the site URL including its context path (for example /confluence or /wiki). Use a read-only account limited to the selected content.",
+    token: "Personal access token / API token",
+    username: "Username or email (optional)",
+    authHint: "Leave empty for Server/Data Center PAT (Bearer). Enter a username or Cloud email for Basic authentication with an API token.",
+    label: "Publication label (optional)",
+    labelPlaceholder: "weknora-published",
+    scopeHint: "Sync current pages in the selected spaces or page subtrees. If a label is set, only matching pages are imported. Private page permissions are not copied to this knowledge base.",
+    deletionHint: "Pages and attachments missing from the source are not automatically deleted. Unsupported macros are marked in the document.",
+  },
   localBrowser: {
     pipOpen: "Pop out preview",
     pipReturn: "Return to conversation",
@@ -6400,6 +6415,7 @@ export default {
       docsFailedSummary: '{n} document(s) failed to sync'
     },
     connector: {
+      confluence: "Confluence",
       feishu: 'Feishu',
       lark: 'Lark',
       feishu_drive: 'Feishu Drive',
@@ -6411,6 +6427,7 @@ export default {
       gitlab: 'GitLab'
     },
     connectorDesc: {
+      confluence: "Sync current pages from Confluence spaces or page subtrees",
       feishu: 'Sync documents, spreadsheets and files from Feishu Wiki',
       lark: 'Sync documents, spreadsheets and files from Lark Wiki (Feishu international)',
       feishu_drive: 'Sync documents, spreadsheets and files from a Feishu Drive folder',

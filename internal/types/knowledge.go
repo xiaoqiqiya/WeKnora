@@ -34,6 +34,7 @@ const (
 	ChannelIM               = "im"                // Generic IM channel
 	ChannelNotion           = "notion"            // Notion
 	ChannelYuque            = "yuque"             // Yuque (语雀)
+	ChannelConfluence       = "confluence"        // Atlassian Confluence
 	ChannelRSS              = "rss"               // RSS / Atom feed
 	ChannelIMA              = "ima"               // Tencent IMA (ima.qq.com)
 )
@@ -482,6 +483,10 @@ func (k *Knowledge) SetProcessOverrides(o *KnowledgeProcessOverrides) error {
 
 // KnowledgeCheckParams defines parameters used to check if knowledge already exists.
 type KnowledgeCheckParams struct {
+	// Optional source ownership scope prevents identical attachments from different
+	// Confluence pages colliding, while preserving normal upload deduplication.
+	DataSourceID string
+	ExternalID   string
 	// File parameters
 	FileName string
 	// FileType scopes file-hash deduplication; callers checking file uploads should set it.

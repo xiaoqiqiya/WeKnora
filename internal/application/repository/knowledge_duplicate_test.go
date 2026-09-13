@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/Tencent/WeKnora/internal/types"
@@ -9,6 +10,30 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCheckKnowledgeExists_ConfluenceAttachmentOwnership(t *testing.T) {
+	db := setupKnowledgeTestDB(t)
+	repo := NewKnowledgeRepository(db)
+	ctx := context.Background()
+	meta, err := json.Marshal(map[string]string{"datasource_id": "source-a", "external_id": "12#attachment#21"})
+	require.NoError(t, err)
+	k := &types.Knowledge{ID: uuid.NewString(), TenantID: 1, KnowledgeBaseID: "kb", Type: "file", FileType: "pdf", FileHash: "shared-bytes", ParseStatus: types.ParseStatusCompleted, Metadata: types.JSON(meta)}
+	require.NoError(t, db.Exec(`INSERT INTO knowledges (id, tenant_id, knowledge_base_id, type, file_type, file_hash, parse_status, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, k.ID, k.TenantID, k.KnowledgeBaseID, k.Type, k.FileType, k.FileHash, k.ParseStatus, string(meta)).Error)
+	for _, tc := range []struct {
+		ds, external string
+		want         bool
+	}{
+		{"source-a", "12#attachment#21", true},
+		{"source-a", "13#attachment#22", false},
+		{"source-b", "12#attachment#21", false},
+		{"source-a", "12#attachment#21#pending#replacement", false},
+		{"", "", true},
+	} {
+		exists, _, err := repo.CheckKnowledgeExists(ctx, 1, "kb", &types.KnowledgeCheckParams{Type: "file", FileType: "pdf", FileHash: "shared-bytes", DataSourceID: tc.ds, ExternalID: tc.external})
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, exists, "%s / %s", tc.ds, tc.external)
+	}
+}
 
 func TestCheckKnowledgeExists_FileHashIsScopedByFileType(t *testing.T) {
 	db := setupKnowledgeTestDB(t)

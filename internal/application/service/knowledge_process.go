@@ -234,6 +234,11 @@ func finalizeIndexedKnowledgeState(
 	}
 
 	knowledge.EnableStatus = "enabled"
+	// Confluence replacements stay hidden until their complete indexes are
+	// promoted by the data source, so failed candidates do not leak into search.
+	if knowledge.Channel == types.ChannelConfluence && knowledge.GetMetadata()["replacement_for"] != "" {
+		knowledge.EnableStatus = "disabled"
+	}
 	knowledge.StorageSize = totalStorageSize
 	knowledge.ProcessedAt = &now
 	knowledge.UpdatedAt = now

@@ -1,4 +1,19 @@
 export default {
+  confluence: {
+    attachments: "同步页面附件",
+    images: "同步图片并进行 OCR",
+    attachmentHint: "附件单独导入同一知识库，并关联来源页面。图片 OCR 需要知识库配置视觉模型并启用多模态解析；不支持的格式或下载失败会显示在同步日志中。",
+    schedule10min: "每 10 分钟",
+    siteUrl: "Confluence 站点地址",
+    siteHint: "填写包含上下文路径的站点地址（例如 /confluence 或 /wiki），使用仅能读取所选内容的专用账号。",
+    token: "个人访问令牌 / API Token",
+    username: "用户名或邮箱（可选）",
+    authHint: "Server/Data Center 使用 PAT 时留空，通过 Bearer 认证；使用 Basic 认证时填写用户名，Cloud 则填写邮箱和 API Token。",
+    label: "发布标签（可选）",
+    labelPlaceholder: "weknora-published",
+    scopeHint: "同步所选空间或父页面子树中的已发布页面。设置标签后只导入匹配页面；源页面访问权限不会自动复制到此知识库。",
+    deletionHint: "暂不自动删除源端消失的页面或附件，未支持的宏会在文档中标记。",
+  },
   localBrowser: {
     pipOpen: "弹出悬浮窗",
     pipReturn: "返回对话小窗",
@@ -844,6 +859,7 @@ export default {
       authHeadersHint: '用于访问私有订阅源，每行一个，格式为「名称: 值」，例如 Authorization: Bearer xxxx'
     },
     connectorDesc: {
+      confluence: "同步 Confluence 空间或页面子树中的已发布文档",
       feishu: '同步飞书知识库中的文档、表格、文件',
       lark: '同步 Lark 知识库中的文档、表格、文件（飞书国际版）',
       feishu_drive: "同步飞书云盘文件夹中的文档、表格、文件",
@@ -855,6 +871,7 @@ export default {
       gitlab: '同步 GitLab 项目中的文件'
     },
     connector: {
+      confluence: "Confluence",
       feishu: '飞书',
       lark: 'Lark（飞书国际版）',
       feishu_drive: "飞书云盘",

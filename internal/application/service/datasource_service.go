@@ -69,6 +69,9 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, ds *types.Data
 	if ds == nil {
 		return nil, datasource.ErrDataSourceInvalid
 	}
+	if ds.Type == types.ConnectorTypeConfluence {
+		ds.SyncDeletions = false
+	}
 
 	// Validate knowledge base exists
 	kb, err := s.kbService.GetKnowledgeBaseByID(ctx, ds.KnowledgeBaseID)
@@ -148,6 +151,9 @@ func (s *DataSourceService) ListDataSources(ctx context.Context, kbID string) ([
 func (s *DataSourceService) UpdateDataSource(ctx context.Context, ds *types.DataSource) (*types.DataSource, error) {
 	if ds == nil || ds.ID == "" {
 		return nil, datasource.ErrDataSourceInvalid
+	}
+	if ds.Type == types.ConnectorTypeConfluence {
+		ds.SyncDeletions = false
 	}
 
 	// Verify data source exists
@@ -1005,7 +1011,11 @@ func (h *streamSyncHandler) Emit(ctx context.Context, item types.FetchedItem) er
 		return err
 	}
 	h.result.Total++
+	failedBefore := h.result.Failed
 	h.svc.applyFetchedItem(withKBActivitySuppressed(ctx), h.ds, &item, h.tagIDs, h.result)
+	if h.ds.Type == types.ConnectorTypeConfluence && h.result.Failed > failedBefore {
+		return fmt.Errorf("%w: confluence item %s; its revision remains retryable", datasource.ErrIngestFailed, item.ExternalID)
+	}
 	return nil
 }
 
@@ -1241,6 +1251,9 @@ func (s *DataSourceService) validateDataSourceConfig(ctx context.Context, ds *ty
 //
 // Returns (isUpdate, error) — isUpdate is true when an existing item was replaced.
 func (s *DataSourceService) ingestItem(ctx context.Context, ds *types.DataSource, item *types.FetchedItem, tagIDs []string) (bool, error) {
+	if ds.Type == types.ConnectorTypeConfluence {
+		return s.ingestConfluenceItem(ctx, ds, item, tagIDs)
+	}
 	// Channel decides the knowledge "source" label shown in the UI. Prefer the
 	// connector-supplied metadata["channel"] (e.g. Feishu Drive sets it to
 	// "feishu" so Drive docs share the wiki's "飞书" label instead of showing

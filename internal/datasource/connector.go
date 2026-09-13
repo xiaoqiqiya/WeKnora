@@ -74,6 +74,12 @@ type StreamHandler interface {
 	Checkpoint(ctx context.Context, cursor *types.SyncCursor) error
 }
 
+// CommitAwareStreamHandler lets a connector checkpoint only revisions whose
+// asynchronous indexing has succeeded. Other connectors keep their existing behavior.
+type CommitAwareStreamHandler interface {
+	ItemCommitted(ctx context.Context, item *types.FetchedItem) (bool, error)
+}
+
 // StreamingConnector is an optional interface. Connectors that implement it let
 // the service interleave fetch→ingest→checkpoint so a large sync persists
 // incrementally and resumes after a timeout, rather than holding every item in
@@ -194,8 +200,8 @@ var ConnectorMetadataRegistry = map[string]ConnectorMetadata{
 		Name:         "Confluence",
 		Description:  "Sync spaces and pages from Atlassian Confluence",
 		Priority:     2,
-		AuthType:     "api_key",
-		Capabilities: []string{"incremental"},
+		AuthType:     "token",
+		Capabilities: []string{"incremental", "hierarchical"},
 	},
 	types.ConnectorTypeYuque: {
 		Type:         types.ConnectorTypeYuque,

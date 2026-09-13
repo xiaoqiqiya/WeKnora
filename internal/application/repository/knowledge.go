@@ -364,6 +364,9 @@ func (r *knowledgeRepository) CheckKnowledgeExists(
 ) (bool, *types.Knowledge, error) {
 	query := r.db.WithContext(ctx).Model(&types.Knowledge{}).
 		Where("tenant_id = ? AND knowledge_base_id = ? AND parse_status <> ?", tenantID, kbID, "failed")
+	if params.DataSourceID != "" && params.ExternalID != "" {
+		query = query.Where("metadata->>'datasource_id' = ? AND metadata->>'external_id' = ?", params.DataSourceID, params.ExternalID)
+	}
 
 	switch params.Type {
 	case "file":

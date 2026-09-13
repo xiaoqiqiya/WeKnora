@@ -26,6 +26,7 @@ var (
 	ErrSyncFailed       = errors.New("sync operation failed")
 	ErrSyncCanceled     = errors.New("sync operation was canceled")
 	ErrFetchFailed      = errors.New("failed to fetch items from source")
+	ErrIngestFailed     = errors.New("failed to ingest source item")
 	ErrResourceNotFound = errors.New("resource not found in source system")
 
 	// Knowledge base errors

@@ -1,4 +1,19 @@
 export default {
+  confluence: {
+    attachments: "Import page attachments",
+    images: "Import images with OCR",
+    attachmentHint: "Attachments are separate documents in this knowledge base linked to their source page. Image OCR requires a visual model and multimodal parsing. Unsupported formats and download failures appear in sync logs.",
+    schedule10min: "Every 10 minutes",
+    siteUrl: "Confluence site URL",
+    siteHint: "Enter the site URL including its context path (for example /confluence or /wiki). Use a read-only account limited to the selected content.",
+    token: "Personal access token / API token",
+    username: "Username or email (optional)",
+    authHint: "Leave empty for Server/Data Center PAT (Bearer). Enter a username or Cloud email for Basic authentication with an API token.",
+    label: "Publication label (optional)",
+    labelPlaceholder: "weknora-published",
+    scopeHint: "Sync current pages in the selected spaces or page subtrees. If a label is set, only matching pages are imported. Private page permissions are not copied to this knowledge base.",
+    deletionHint: "Pages and attachments missing from the source are not automatically deleted. Unsupported macros are marked in the document.",
+  },
   localBrowser: {
     pipOpen: "미리보기 팝업 열기",
     pipReturn: "대화 내 미리보기로 돌아가기",
@@ -842,6 +857,7 @@ export default {
       authHeadersHint: '비공개 피드 접근용. 한 줄에 하나씩 「이름: 값」 형식으로 입력하세요. 예: Authorization: Bearer xxxx'
     },
     connectorDesc: {
+      confluence: "Sync current pages from Confluence spaces or page subtrees",
       feishu: '페이슈 위키에서 문서, 스프레드시트, 파일 동기화',
       lark: 'Lark 위키에서 문서, 스프레드시트, 파일 동기화',
       feishu_drive: "페이슈 드라이브 폴더에서 문서, 스프레드시트, 파일 동기화",
@@ -853,6 +869,7 @@ export default {
       gitlab: 'GitLab 프로젝트의 파일 동기화'
     },
     connector: {
+      confluence: "Confluence",
       feishu: '페이슈 (Feishu)',
       lark: 'Lark (Feishu 글로벌)',
       feishu_drive: "페이슈 드라이브",

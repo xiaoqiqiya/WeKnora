@@ -469,6 +469,7 @@ const tempDsId = ref('')
 
 // Schedule presets
 const schedulePresets = computed(() => [
+	{ label: t('confluence.schedule10min'), value: '0 */10 * * * *' },
   { label: t('datasource.schedule30min'), value: '0 */30 * * * *' },
   { label: t('datasource.schedule1h'), value: '0 0 * * * *' },
   { label: t('datasource.schedule6h'), value: '0 0 */6 * * *' },
@@ -497,6 +498,16 @@ interface ConnectorDef {
 }
 
 const connectorDefs = computed<ConnectorDef[]>(() => [
+	{
+		type: 'confluence', available: true,
+		docUrl: 'https://developer.atlassian.com/server/confluence/confluence-server-rest-api/',
+		permissionDocUrl: '', permissionPageUrl: '', requiredPermissions: [],
+		fields: [
+			{ key: 'base_url', labelKey: 'confluence.siteUrl', placeholder: 'https://confluence.example.com', hintKey: 'confluence.siteHint' },
+			{ key: 'api_token', labelKey: 'confluence.token', placeholder: '', secret: true },
+			{ key: 'username', labelKey: 'confluence.username', placeholder: '', optional: true, hintKey: 'confluence.authHint' },
+		],
+	},
   {
     type: 'feishu',
     available: true,
@@ -694,6 +705,10 @@ watch(visible, async (v) => {
       sync_deletions: props.dataSource.sync_deletions,
     }
     selectedResourceIds.value = form.value.config?.resource_ids || []
+		if (form.value.type === 'confluence') {
+			form.value.config.settings = { attachments: true, images: true, ...form.value.config.settings }
+			form.value.sync_deletions = false
+		}
     if (isGitLabConnector(form.value.type)) {
       const savedProjects = Array.isArray(form.value.config.settings.projects) ? form.value.config.settings.projects : []
       gitlabProjects.value = savedProjects.map((project: any) => ({
@@ -766,7 +781,12 @@ function selectType(def: ConnectorDef) {
   if (!def.available) return
   form.value.type = def.type
   form.value.name = t(`datasource.connector.${def.type}`)
-  form.value.config.credentials = {}
+	form.value.config.credentials = {}
+	if (def.type === 'confluence') {
+		form.value.sync_schedule = '0 */10 * * * *'
+		form.value.sync_deletions = false
+		form.value.config.settings = { attachments: true, images: true }
+	}
   if (isGitLabConnector(def.type)) addGitLabProject()
   rssAuthHeaders.value = []
   step.value = 1
@@ -1072,6 +1092,7 @@ async function commitCredentialsIfNeeded(dsId: string): Promise<boolean> {
 
 // --- Final submit ---
 async function handleSubmit() {
+	if (form.value.type === 'confluence') form.value.sync_deletions = false
   form.value.config.resource_ids = selectedResourceIds.value
   submitting.value = true
   try {
@@ -1745,6 +1766,14 @@ const drawerConfirmText = computed(() => {
 
     <!-- Step 3: Sync strategy -->
     <template v-if="step === 3">
+		<section v-if="form.type === 'confluence'" class="setting-drawer__section">
+			<h4 class="setting-drawer__section-title">{{ t('confluence.label') }}</h4>
+			<t-input v-model="form.config.settings.label" :placeholder="t('confluence.labelPlaceholder')" />
+			<p class="form-hint">{{ t('confluence.scopeHint') }}</p>
+			<t-checkbox v-model="form.config.settings.attachments">{{ t('confluence.attachments') }}</t-checkbox>
+			<t-checkbox v-model="form.config.settings.images" :disabled="!form.config.settings.attachments">{{ t('confluence.images') }}</t-checkbox>
+			<p class="form-hint">{{ t('confluence.attachmentHint') }}</p>
+		</section>
       <section class="setting-drawer__section">
         <h4 class="setting-drawer__section-title">{{ t('datasource.syncScheduleLabel') }}</h4>
         <t-select v-model="form.sync_schedule">
@@ -1806,7 +1835,8 @@ const drawerConfirmText = computed(() => {
         </div>
 
         <div class="form-item form-item--flat">
-          <t-checkbox v-model="form.sync_deletions">{{ t('datasource.syncDeletions') }}</t-checkbox>
+          <t-checkbox v-model="form.sync_deletions" :disabled="form.type === 'confluence'">{{ t('datasource.syncDeletions') }}</t-checkbox>
+			<p v-if="form.type === 'confluence'" class="form-hint">{{ t('confluence.deletionHint') }}</p>
         </div>
       </section>
     </template>

@@ -1,0 +1,15 @@
+{
+  "confluence_url": "https://confluence.example.com",
+  "confluence_token": "",
+  "confluence_username": "",
+  "weknora_url": "http://localhost:8080",
+  "weknora_key": "",
+  "knowledge_base_id": "",
+  "test_page_id": "",
+  "data_source_id": "",
+  "query": "",
+  "attachments": true,
+  "images": true,
+  "allow_test_writes": false,
+  "timeout_seconds": 900
+}
