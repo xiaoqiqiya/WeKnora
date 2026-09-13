@@ -65,6 +65,9 @@ type page struct {
 		ID    string `json:"id"`
 		Title string `json:"title"`
 	} `json:"ancestors"`
+	Children struct {
+		Page *collection[page] `json:"page"`
+	} `json:"children"`
 	Version struct {
 		Number int       `json:"number"`
 		When   time.Time `json:"when"`
@@ -94,6 +97,7 @@ type collection[T any] struct {
 	Results []T `json:"results"`
 	Start   int `json:"start"`
 	Limit   int `json:"limit"`
+	Size    int `json:"size"`
 	Links   struct {
 		Next string `json:"next"`
 	} `json:"_links"`

@@ -69,7 +69,7 @@ func (*Connector) ListResources(ctx context.Context, raw *types.DataSourceConfig
 		return nil, err
 	}
 	path := "/content"
-	query := url.Values{"type": {"page"}, "status": {"current"}, "expand": {"version,space,ancestors"}}
+	query := url.Values{"type": {"page"}, "status": {"current"}, "expand": {"version,space,ancestors,children.page"}}
 	if kind == "space" {
 		query.Set("spaceKey", value)
 	} else {
@@ -82,7 +82,10 @@ func (*Connector) ListResources(ctx context.Context, raw *types.DataSourceConfig
 		if kind == "space" && len(p.Ancestors) != 0 {
 			return nil
 		}
-		resources = append(resources, types.Resource{ExternalID: "page:" + p.ID, Name: p.Title, Type: "page", ParentID: parentID, HasChildren: true, URL: c.webURL(p.Links.WebUI), ModifiedAt: p.Version.When})
+		children := p.Children.Page
+		// Older servers may omit the expansion; the UI resolves unknown nodes on first expand.
+		hasChildren := children == nil || children.Size > 0 || len(children.Results) > 0 || children.Links.Next != ""
+		resources = append(resources, types.Resource{ExternalID: "page:" + p.ID, Name: p.Title, Type: "page", ParentID: parentID, HasChildren: hasChildren, URL: c.webURL(p.Links.WebUI), ModifiedAt: p.Version.When})
 		return nil
 	})
 	return resources, err

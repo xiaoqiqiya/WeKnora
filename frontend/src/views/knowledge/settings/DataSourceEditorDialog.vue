@@ -19,6 +19,7 @@ import {
 import SettingDrawer from '@/components/settings/SettingDrawer.vue'
 import DataSourceTypeIcon from './DataSourceTypeIcon.vue'
 import { getDatasourceIconUrl } from './datasourceIcons'
+import { expandResourceTree } from './resourceExpansion'
 
 const props = defineProps<{
   kbId: string
@@ -186,6 +187,8 @@ const resources = ref<Resource[]>([])
 const loadingResources = ref(false)
 const selectedResourceIds = ref<string[]>([])
 const expandedResourceIds = ref(new Set<string>())
+let expandAllRun = 0
+const childrenRequests = new Map<string, Promise<unknown>>()
 // Lazy loading: parents whose children have already been fetched, and parents
 // currently being fetched. Used to load hierarchical sources (e.g. Feishu wiki)
 // one level at a time instead of traversing the whole tree up front (#1672).
@@ -392,6 +395,7 @@ const checkStates = computed(() => {
 })
 
 function toggleExpand(id: string) {
+  expandAllRun++
   const next = new Set(expandedResourceIds.value)
   if (next.has(id)) {
     next.delete(id)
@@ -408,15 +412,25 @@ function toggleExpand(id: string) {
 // Notion) or when this node's children have already been fetched.
 async function ensureChildrenLoaded(id: string) {
   if (!tempDsId.value) return
-  if (loadedChildrenIds.value.has(id) || loadingChildrenIds.value.has(id)) return
+  if (loadedChildrenIds.value.has(id)) return
+  const requestKey = `${tempDsId.value}:${id}`
+  const pending = childrenRequests.get(requestKey)
+  if (pending) {
+    await pending.catch(() => {})
+    return
+  }
   if (treeFullyLoaded.value) {
     loadedChildrenIds.value = new Set(loadedChildrenIds.value).add(id)
     return
   }
 
   loadingChildrenIds.value = new Set(loadingChildrenIds.value).add(id)
+  const sourceId = tempDsId.value
   try {
-    const res = await listResources(tempDsId.value, id)
+    const request = listResources(sourceId, id)
+    childrenRequests.set(requestKey, request)
+    const res = await request
+    if (tempDsId.value !== sourceId) return
     const children: Resource[] = res?.data || res || []
     if (children.length > 0) {
       const existing = new Set(resources.value.map(r => r.external_id))
@@ -426,6 +440,14 @@ async function ensureChildrenLoaded(id: string) {
       }
       resources.value = merged
     }
+    resources.value = resources.value.map(r => r.external_id === id
+      ? { ...r, has_children: children.length > 0 }
+      : r)
+    if (children.length === 0) {
+      const expanded = new Set(expandedResourceIds.value)
+      expanded.delete(id)
+      expandedResourceIds.value = expanded
+    }
     loadedChildrenIds.value = new Set(loadedChildrenIds.value).add(id)
   } catch (e: any) {
     MessagePlugin.error(e?.message || e?.error || t('datasource.resourceLoadFailed'))
@@ -434,6 +456,7 @@ async function ensureChildrenLoaded(id: string) {
     next.delete(id)
     expandedResourceIds.value = next
   } finally {
+    childrenRequests.delete(requestKey)
     const s = new Set(loadingChildrenIds.value)
     s.delete(id)
     loadingChildrenIds.value = s
@@ -1171,6 +1194,7 @@ const selectedResourceCount = computed(() => {
 const hasExpandableNodes = computed(() => resources.value.some(r => r.has_children))
 
 function resourceIconName(r: Resource): string {
+  if (r.type === 'space') return 'root-list'
   if (r.has_children) return 'folder'
   switch (r.type) {
     case 'wiki_space':
@@ -1184,20 +1208,26 @@ function resourceIconName(r: Resource): string {
   }
 }
 
-function expandAllNodes() {
-  const expandable = resources.value.filter(r => r.has_children)
-  expandedResourceIds.value = new Set(expandable.map(r => r.external_id))
-  // Lazily load children of any expanded node that hasn't been fetched yet.
-  for (const r of expandable) {
-    void ensureChildrenLoaded(r.external_id)
-  }
+async function expandAllNodes() {
+  const run = ++expandAllRun
+  const sourceId = tempDsId.value
+  await expandResourceTree(
+    () => resources.value,
+    async (id) => {
+      expandedResourceIds.value = new Set(expandedResourceIds.value).add(id)
+      await ensureChildrenLoaded(id)
+    },
+    () => run !== expandAllRun || !visible.value || sourceId !== tempDsId.value,
+  )
 }
 
 function collapseAllNodes() {
+  expandAllRun++
   expandedResourceIds.value = new Set()
 }
 
 const resourceTypeLabelMap: Record<string, string> = {
+  space: 'datasource.resourceType.wikiSpace',
   wiki_space: 'datasource.resourceType.wikiSpace',
   doc_category: 'datasource.resourceType.docCategory',
   book: 'datasource.resourceType.book',

@@ -65,6 +65,38 @@ func TestConfluenceLiveRead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("live page read: %v", err)
 	}
+	parentID := "space:" + p.Space.Key
+	pathIDs := []string{}
+	for _, ancestor := range p.Ancestors {
+		pathIDs = append(pathIDs, ancestor.ID)
+	}
+	pathIDs = append(pathIDs, id)
+	var selected types.Resource
+	for _, pathID := range pathIDs {
+		rows, err := connector.ListResources(ctx, raw, parentID)
+		if err != nil {
+			t.Fatalf("real resource listing: %v", err)
+		}
+		found := false
+		for _, row := range rows {
+			if row.ExternalID == "page:"+pathID {
+				selected = row
+				found = true
+				t.Logf("tree_parent=%s page=%s has_children=%t", parentID, row.ExternalID, row.HasChildren)
+			}
+		}
+		if !found {
+			t.Fatalf("page %s is missing under resource %s", pathID, parentID)
+		}
+		parentID = "page:" + pathID
+	}
+	children, err := connector.ListResources(ctx, raw, "page:"+id)
+	if err != nil {
+		t.Fatalf("real selected page children: %v", err)
+	}
+	if selected.HasChildren != (len(children) > 0) {
+		t.Fatal("selected page's expand arrow does not match actual children")
+	}
 	text, warnings, err := markdown(p, base)
 	if err != nil {
 		t.Fatalf("live page conversion: %v", err)
